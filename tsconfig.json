@@ -1,44 +1,19 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    // File Layout
-    "rootDir": "./src",
-    "outDir": "./dist",
-
-    // Environment Settings
-    // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
-    "target": "esnext",
-    "types": [],
-    // For nodejs:
-    // "lib": ["esnext"],
-    // "types": ["node"],
-    // and npm install -D @types/node
-
-    // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
-    // Stricter Typechecking Options
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-
-    // Style Options
-    // "noImplicitReturns": true,
-    // "noImplicitOverride": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // "noFallthroughCasesInSwitch": true,
-    // "noPropertyAccessFromIndexSignature": true,
-
-    // Recommended Options
-    "strict": true,
-    "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
-    "skipLibCheck": true,
-  }
+    /* Basic Options */
+    "noImplicitAny":false,
+    "target": "es2020" /* Specify ECMAScript target version */,
+    "module": "node16" /* Specify module code generation: CommonJS is standard for Node */,
+    "outDir": "./dist" /* Redirect output structure to the directory */,
+    "rootDir": "./src" /* Specify the root directory of source files */,
+    "esModuleInterop": true /* Enables interoperability between CommonJS and ESM modules */,
+    "forceConsistentCasingInFileNames": true /* Ensure that casing is consistent throughout a file */,
+    "strict": true /* Enable all strict type-checking options */,
+    "skipLibCheck": true /* Skip type checking of declaration files */,
+    "sourceMap": true /* Generates corresponding .map files */,
+    "moduleResolution": "node16" /* Resolve modules using Node.js style */,
+    "resolveJsonModule": true /* Allows importing JSON files */
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }

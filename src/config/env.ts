@@ -5,4 +5,5 @@ dotenv.config();
 export const ENV = {
   PORT: process.env.PORT,
   MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/myapp',
+  BeyondChats_URL: process.env.BeyondChats_API_KEY || 'https://beyondchats.com/blogs/',
 }

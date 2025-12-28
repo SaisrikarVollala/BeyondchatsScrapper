@@ -1,64 +1,89 @@
+import * as cheerio from "cheerio";
 import axios from "axios";
-import * as  cheerio from "cheerio";
-import { ENV } from "../config/env.js";
+import { ContentBlock } from "../models/blog.model.js";
 
 
 
+function scrapeMeta($: cheerio.CheerioAPI) {
+  const title = $("h1").first().text().trim();
+  const author = $('a[href*="/author/"]').first().text().trim();
+  const publishedDate = $("time").first().text().trim();
+  const category = $('a[href*="/blogs/category/"]').first().text().trim();
+  const likes = parseInt(
+    $("span.wp-applause-count").first().text().trim() || "0"
+  );
 
-
-
-async function getLastPageNumber($) {
-  let lastPage = 1;
-
-  $(".page-numbers").each((i, e) => {
-    const page = parseInt($(e).text());
-    if (!isNaN(page)) {
-      lastPage = Math.max(lastPage, page);
-    }
-  });
-
-  return lastPage;
+  return { title, author, publishedDate, category, likes };
 }
 
+function scrapeContentBlocks($: cheerio.CheerioAPI): ContentBlock[] {
+  const blocks: ContentBlock[] = [];
 
+  $(".elementor-widget-theme-post-content")
+    .find("h1, h2, h3, p, ul, blockquote, figure")
+    .each((i, e) => {
+      if (e.type !== "tag") return;
 
-export async function scrapePage(pageNo) {
-  const url =
-    pageNo === 1
-      ? ENV.BeyondChats_URL
-      : `${ENV.BeyondChats_URL}/page/${pageNo}/`;
+      const tag = e.tagName.toLowerCase();
 
-  const { data } = await axios.get(url);
+      if (["h1", "h2", "h3"].includes(tag)) {
+        blocks.push({
+          type: "heading",
+          level: Number(tag[1]),
+          text: $(e).text().trim(),
+        });
+      } else if (tag === "p") {
+        const text = $(e).text().trim();
+        if (text) {
+          blocks.push({ type: "paragraph", text });
+        }
+      } else if (tag === "ul") {
+        const items: string[] = [];
+        $(e)
+          .find("li")
+          .each((_, li) => {
+            items.push($(li).text().trim());
+          });
 
-  const $ = cheerio.load(data);
-  const blogs:any = [];
+        if (items.length) {
+          blocks.push({ type: "list", items });
+        }
+      } else if (tag === "blockquote") {
+        blocks.push({
+          type: "quote",
+          text: $(e).text().trim(),
+        });
+      } else if (tag === "figure") {
+        const img = $(e).find("img");
+        const src = img.attr("src");
 
-  $("article").each((i, e) => {
-    blogs.push({
-      title: $(e).find("h2.entry-title").text().trim(),
-      image: $(e).find("img").first().attr("src"),
-      link: $(e).find("a").first().attr("href"),
-      excerpt: $(e).find("p").text().trim(),
-      meta: $(e)
-        .find("ul.entry-meta")
-        .first()
-        .text()
-        .replace(/\s+/g, " ")
-        .trim(),
+        if (src) {
+          blocks.push({
+            type: "image",
+            src,
+          });
+        }
+      }
     });
+
+  return blocks;
+}
+
+
+
+export async function scrapeArticle(url: string) {
+  const { data } = await axios.get(url, {
+    headers: { "User-Agent": "Mozilla/5.0" },
   });
-  return blogs;
-  
-}
 
-export async function getBlogs() {
-  const { data } = await axios.get(ENV.BeyondChats_URL);
   const $ = cheerio.load(data);
-  const lastPage = await getLastPageNumber($);
- const blogs1= await scrapePage(lastPage);
- const blogs2= await scrapePage(lastPage - 1);
-const allBlogs = [...blogs1, ...blogs2];
-return allBlogs.slice(-5);
+
+  const meta = scrapeMeta($);
+  const contentBlocks = scrapeContentBlocks($);
+
+  return {
+    ...meta,
+    contentBlocks,
+    sourceUrl: url,
+  };
 }
-
-

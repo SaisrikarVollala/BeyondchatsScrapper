@@ -1,8 +1,6 @@
 import * as cheerio from "cheerio";
 import axios from "axios";
-import { ContentBlock } from "../models/blog.model.js";
-
-
+import { ContentBlock } from "../models/article.js";
 
 function scrapeMeta($: cheerio.CheerioAPI) {
   const title = $("h1").first().text().trim();
@@ -46,7 +44,7 @@ function scrapeContentBlocks($: cheerio.CheerioAPI): ContentBlock[] {
           });
 
         if (items.length) {
-          blocks.push({ type: "list", items });
+          blocks.push({ type: "list", items: items.join(";") });
         }
       } else if (tag === "blockquote") {
         blocks.push({
@@ -68,8 +66,6 @@ function scrapeContentBlocks($: cheerio.CheerioAPI): ContentBlock[] {
 
   return blocks;
 }
-
-
 
 export async function scrapeArticle(url: string) {
   const { data } = await axios.get(url, {

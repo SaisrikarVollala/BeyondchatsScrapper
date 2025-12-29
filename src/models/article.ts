@@ -4,7 +4,7 @@ import {Schema, model} from 'mongoose';
 export type ContentBlock =
   | { type: "heading"; level: number; text: string }
   | { type: "paragraph"; text: string }
-  | { type: "list"; items: string[] }
+  | { type: "list"; items: string }
   | { type: "quote"; text: string }
   | { type: "image"; src: string };
 
@@ -17,7 +17,7 @@ const contentBlockSchema = new Schema(
     },
     level: { type: Number},
     text: { type: String },
-    items: [{ type: String }],
+    items: { type: String },
     src: { type: String },
     alt: { type: String },
   },
@@ -28,15 +28,19 @@ type ArticleType = {
     title: string;
     author: string;
     publishedDate: string;
+    articleId: number;
     category: string;
     likes: number;
     sourceUrl: string;
     contentBlocks: ContentBlock[];
+    enhancedContent?: ContentBlock[];
 };
 
 const articleSchema = new Schema<ArticleType>(
   {
     title: { type: String, required: true },
+
+    articleId: { type:Number, unique: true ,index: true},
 
     author: { type: String, required: true },
 
@@ -56,8 +60,13 @@ const articleSchema = new Schema<ArticleType>(
       type: [contentBlockSchema],
       required: true,
     },
+    enhancedContent: {
+      type: [contentBlockSchema],
+    },
   },
   { timestamps: true }
 );
+
+
 
 export const Article = model<ArticleType>("Article", articleSchema);

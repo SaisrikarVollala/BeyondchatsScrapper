@@ -129,7 +129,7 @@ beyondchats-scraper/
 └── README.md              # This file
 ```
 
-## 🏗 Architecture
+## Architecture
 
 ### Data Flow Diagram
 

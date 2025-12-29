@@ -2,6 +2,7 @@ import express from "express";
 import articleRoutes from "./routes/articles.route.js";
 import { connectDB } from "./config/db.js";
 import { ENV } from "./config/env.js";
+import storeToDB from "./scripts/storeToDB.js";
 
 const app = express();
 const PORT = ENV.PORT || 3000;
@@ -28,6 +29,7 @@ app.use(
 async function startServer() {
   try {
     await connectDB();
+    await storeToDB();
 
     app.listen(PORT, () => {
       console.log(`server running on ${PORT}`);

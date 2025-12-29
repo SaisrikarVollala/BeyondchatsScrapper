@@ -1,12 +1,12 @@
-import {Schema, model} from 'mongoose';
-
+import { Schema, Document, model } from "mongoose";
+import { getNextArticleId } from "./counter.model.js";
 
 export type ContentBlock =
   | { type: "heading"; level: number; text: string }
   | { type: "paragraph"; text: string }
   | { type: "list"; items: string }
   | { type: "quote"; text: string }
-  | { type: "image"; src: string };
+  | { type: "image"; src: string; alt?: string };
 
 const contentBlockSchema = new Schema(
   {
@@ -15,36 +15,36 @@ const contentBlockSchema = new Schema(
       required: true,
       enum: ["heading", "paragraph", "list", "quote", "image"],
     },
-    level: { type: Number},
+    level: { type: Number },
     text: { type: String },
     items: { type: String },
     src: { type: String },
     alt: { type: String },
   },
-  { _id: false } 
+  { _id: false }
 );
 
-type ArticleType = {
-    title: string;
-    author: string;
-    publishedDate: string;
-    articleId: number;
-    category: string;
-    likes: number;
-    sourceUrl: string;
-    contentBlocks: ContentBlock[];
-    enhancedContent?: ContentBlock[];
-};
+interface ArticleType extends Document {
+  title: string;
+  author: string;
+  publishedDate: Date;
+  articleId: number;
+  category: string;
+  likes: number;
+  sourceUrl: string;
+  contentBlocks: ContentBlock[];
+  enhancedContent?: ContentBlock[];
+}
 
 const articleSchema = new Schema<ArticleType>(
   {
     title: { type: String, required: true },
 
-    articleId: { type:Number, unique: true ,index: true},
+    articleId: { type: Number, unique: true, index: true },
 
     author: { type: String, required: true },
 
-    publishedDate: { type: String, required: true },
+    publishedDate: { type: Date, required: true },
 
     category: { type: String, required: true },
 
@@ -53,13 +53,14 @@ const articleSchema = new Schema<ArticleType>(
     sourceUrl: {
       type: String,
       required: true,
-      unique: true, 
+      unique: true,
     },
 
     contentBlocks: {
       type: [contentBlockSchema],
       required: true,
     },
+
     enhancedContent: {
       type: [contentBlockSchema],
     },
@@ -67,6 +68,14 @@ const articleSchema = new Schema<ArticleType>(
   { timestamps: true }
 );
 
+articleSchema.pre<ArticleType>("save", async function () {
+  if (!this.isNew) return;
 
+  try {
+    this.articleId = await getNextArticleId();
+  } catch (err) {
+    throw err;
+  }
+});
 
 export const Article = model<ArticleType>("Article", articleSchema);

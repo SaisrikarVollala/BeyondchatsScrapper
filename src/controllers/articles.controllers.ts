@@ -1,13 +1,12 @@
 import { Request, Response } from "express";
 import { Article } from "../models/article.js";
 import { get } from "node:http";
-import { getNextArticleId } from "../models/counter.js";
+
 
 export class ArticleController {
   static async create(req: Request, res: Response) {
     try {
-      const articleId = await getNextArticleId();
-      const article = await Article.create({...req.body,articleId});
+      const article = await Article.create( req.body);
 
       return res.status(201).json({
         success: true,

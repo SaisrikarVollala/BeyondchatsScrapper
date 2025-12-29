@@ -29,8 +29,6 @@ app.use(
 async function startServer() {
   try {
     await connectDB();
-    await storeToDB();
-
     app.listen(PORT, () => {
       console.log(`server running on ${PORT}`);
     });

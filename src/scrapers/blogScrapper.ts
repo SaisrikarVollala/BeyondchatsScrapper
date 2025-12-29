@@ -1,5 +1,5 @@
-import * as cheerio from "cheerio";
 import axios from "axios";
+import * as cheerio from "cheerio";
 import { ContentBlock } from "../models/article.js";
 
 function scrapeMeta($: cheerio.CheerioAPI) {
@@ -17,59 +17,107 @@ function scrapeMeta($: cheerio.CheerioAPI) {
 function scrapeContentBlocks($: cheerio.CheerioAPI): ContentBlock[] {
   const blocks: ContentBlock[] = [];
 
-  $(".elementor-widget-theme-post-content")
-    .find("h1, h2, h3, p, ul, blockquote, figure")
-    .each((i, e) => {
-      if (e.type !== "tag") return;
+  const container = $(".elementor-widget-theme-post-content").first().length
+    ? $(".elementor-widget-theme-post-content").first()
+    : $("article").first().length
+    ? $("article").first()
+    : $("main");
 
-      const tag = e.tagName.toLowerCase();
+  container.children().each((_, el) => {
+    if (el.type !== "tag") return;
 
-      if (["h1", "h2", "h3"].includes(tag)) {
-        blocks.push({
-          type: "heading",
-          level: Number(tag[1]),
-          text: $(e).text().trim(),
-        });
-      } else if (tag === "p") {
-        const text = $(e).text().trim();
-        if (text) {
-          blocks.push({ type: "paragraph", text });
-        }
-      } else if (tag === "ul") {
-        const items: string[] = [];
-        $(e)
-          .find("li")
-          .each((_, li) => {
-            items.push($(li).text().trim());
-          });
+    const tag = el.tagName.toLowerCase();
+    const $el = $(el);
 
-        if (items.length) {
-          blocks.push({ type: "list", items: items.join(";") });
-        }
-      } else if (tag === "blockquote") {
-        blocks.push({
-          type: "quote",
-          text: $(e).text().trim(),
-        });
-      } else if (tag === "figure") {
-        const img = $(e).find("img");
-        const src = img.attr("src");
-
-        if (src) {
-          blocks.push({
-            type: "image",
-            src,
-          });
-        }
-      }
+    $el.find("strong").each((_, s) => {
+      const txt = $(s).text();
+      $(s).replaceWith(`**${txt}**`);
     });
 
-  return blocks;
+    const text = $el
+      .clone()
+      .children()
+      .remove()
+      .end()
+      .text()
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!text && tag !== "figure") return;
+
+    if (/^h[1-6]$/.test(tag)) {
+      blocks.push({
+        type: "heading",
+        level: Number(tag[1]),
+        text,
+      });
+      return;
+    }
+
+    if (tag === "p") {
+      blocks.push({
+        type: "paragraph",
+        text,
+      });
+      return;
+    }
+
+    if (tag === "ul" || tag === "ol") {
+      const items: string[] = [];
+      $el.find("li").each((_, li) => {
+        const itemText = $(li).text().trim();
+        if (itemText) items.push(itemText);
+      });
+
+      if (items.length) {
+        blocks.push({
+          type: "list",
+          items: items.join(";"),
+        });
+      }
+      return;
+    }
+
+    if (tag === "blockquote") {
+      blocks.push({
+        type: "quote",
+        text,
+      });
+      return;
+    }
+
+    if (tag === "figure") {
+      const img = $el.find("img");
+      const src = img.attr("src") || img.attr("data-src");
+      if (src) {
+        blocks.push({
+          type: "image",
+          src,
+        });
+      }
+    }
+  });
+
+  return dedupe(blocks);
+}
+
+function dedupe(blocks: ContentBlock[]) {
+  const seen = new Set<string>();
+  return blocks.filter((b) => {
+    const key = `${b.type}-${JSON.stringify(b)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export async function scrapeArticle(url: string) {
   const { data } = await axios.get(url, {
-    headers: { "User-Agent": "Mozilla/5.0" },
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    },
+    timeout: 30000,
   });
 
   const $ = cheerio.load(data);
